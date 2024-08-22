@@ -3,7 +3,6 @@ import asyncio
 import logging
 import math
 import os
-import re
 
 try:
     from typing import Literal
@@ -215,11 +214,6 @@ async def ConnectMetaTrader(update: Update, trade: dict, enterTrade: bool):
         A coroutine that confirms that the connection to MetaAPI/MetaTrader and trade placement were successful
     """
 
-    # Extract the author from the message
-    message_text = update.message.text
-    match = re.search(r'/trade coming from (.+)', message_text)
-    author = match.group(1) if match else 'Unknown'
-
     # creates connection to MetaAPI
     api = MetaApi(API_KEY)
 
@@ -268,7 +262,7 @@ async def ConnectMetaTrader(update: Update, trade: dict, enterTrade: bool):
         if(enterTrade == True):
             # create a dictionary with only the comment
             options = {
-                'comment': author
+                'comment': trade['Author']
             }
 
             # enters trade on to MetaTrader account
