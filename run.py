@@ -60,11 +60,6 @@ def ParseSignal(signal: str) -> dict:
 
     trade = {}
 
-    for line in signal:
-        if '/trade coming from' in line:
-            trade['Author'] = line.split('from ')[-1]
-            break
-
     # determines the order type of the trade
     if('Buy Limit'.lower() in signal[0].lower()):
         trade['OrderType'] = 'Buy Limit'
@@ -104,10 +99,12 @@ def ParseSignal(signal: str) -> dict:
 
     trade['StopLoss'] = float((signal[2].split())[-1])
     trade['TP'] = [float((signal[3].split())[-1])]
+    trade['Comment'] = (signal[4].split())[-1]
+
 
     # checks if there's a fourth line and parses it for TP2
-    if(len(signal) > 4):
-        trade['TP'].append(float(signal[4].split()[-1]))
+    # if(len(signal) > 4):
+    #     trade['TP'].append(float(signal[4].split()[-1]))
 
     # adds risk factor to trade
     trade['RiskFactor'] = RISK_FACTOR
@@ -115,7 +112,7 @@ def ParseSignal(signal: str) -> dict:
     return trade
 
 def GetTradeInformation(update: Update, trade: dict, balance: float) -> None:
-    """Calculates information from given trade including stop loss and take profit in pips, posiition size, and potential loss/profit.
+    """Calculates information from given trade including stop loss and take profit in pips, position size, and potential loss/profit.
 
     Arguments:
         update: update from Telegram
@@ -260,9 +257,9 @@ async def ConnectMetaTrader(update: Update, trade: dict, enterTrade: bool):
 
         # checks if the user has indicated to enter trade
         if(enterTrade == True):
-            # create a dictionary with only the comment
+
             options = {
-                'comment': trade['Author']
+                'comment': trade['Comment']
             }
 
             # enters trade on to MetaTrader account
