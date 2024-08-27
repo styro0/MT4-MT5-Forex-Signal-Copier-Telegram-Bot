@@ -42,6 +42,9 @@ SYMBOLS = ['BTCUSD', 'AUDCAD', 'AUDCHF', 'AUDJPY', 'AUDNZD', 'AUDUSD', 'CADCHF',
 # RISK FACTOR
 RISK_FACTOR = float(os.environ.get("RISK_FACTOR"))
 
+# Threshold for converting limit order to market order (in pips)
+PRICE_DIFFERENCE_THRESHOLD = 10  # Adjust this value as needed
+
 
 # Helper Functions
 def ParseSignal(signal: str) -> dict:
@@ -110,6 +113,23 @@ def ParseSignal(signal: str) -> dict:
     trade['RiskFactor'] = RISK_FACTOR
 
     return trade
+
+async def ConvertLimitToMarketIfNeeded(connection, trade):
+    """Converts a limit order to a market order if the current price is close to the entry price."""
+    
+    price = await connection.get_symbol_price(symbol=trade['Symbol'])
+
+    # Get the current bid and ask prices
+    bid = float(price['bid'])
+    ask = float(price['ask'])
+
+    # Determine if the order should be converted
+    if trade['OrderType'] == 'Buy Limit' and abs(bid - trade['Entry']) <= PRICE_DIFFERENCE_THRESHOLD:
+        trade['OrderType'] = 'Buy'
+        trade['Entry'] = bid
+    elif trade['OrderType'] == 'Sell Limit' and abs(ask - trade['Entry']) <= PRICE_DIFFERENCE_THRESHOLD:
+        trade['OrderType'] = 'Sell'
+        trade['Entry'] = ask
 
 def GetTradeInformation(update: Update, trade: dict, balance: float) -> None:
     """Calculates information from given trade including stop loss and take profit in pips, position size, and potential loss/profit.
@@ -251,6 +271,8 @@ async def ConnectMetaTrader(update: Update, trade: dict, enterTrade: bool):
             # uses ask price if the order type is a sell
             if(trade['OrderType'] == 'Sell'):
                 trade['Entry'] = float(price['ask'])
+        else:
+            await ConvertLimitToMarketIfNeeded(connection, trade)
 
         # produces a table with trade information
         GetTradeInformation(update, trade, account_information['balance'])
