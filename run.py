@@ -318,8 +318,23 @@ async def ConnectMetaTrader(update: Update, trade: dict, enterTrade: bool):
                     for takeProfit in trade['TP']:
                         result = await connection.create_stop_sell_order(trade['Symbol'], trade['PositionSize'] / len(trade['TP']), trade['Entry'], trade['StopLoss'], takeProfit, options)
 
+                # Set the trailing stop
+                pip_multiplier = 0.0001  # Default multiplier for most forex pairs
+                if trade['Symbol'] == 'XAUUSD':
+                    pip_multiplier = 0.1
+                elif trade['Symbol'] == 'XAGUSD':
+                    pip_multiplier = 0.001
+
+                trailing_stop_distance = 30 * pip_multiplier  # Convert 30 pips to price units
+
+                await connection.set_trailing_stop(
+                    trade['Symbol'],
+                    result['orderId'],
+                    trailing_stop_distance
+                )
+
                 # sends success message to user
-                update.effective_message.reply_text("Trade entered successfully! 💰")
+                update.effective_message.reply_text("Trade entered successfully with a trailing stop of 30 pips! 💰")
 
                 # prints success message to console
                 logger.info('\nTrade entered successfully!')
